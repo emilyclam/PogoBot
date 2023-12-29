@@ -1,5 +1,5 @@
 import discord
-import os
+import private
 import GetEvents
 
 TOKEN = "MTE5MDE2NTgwMDk3MjE4OTY5Ng.GCtUXk.71Vpmq-y8FWD_XEGN9hgLq5LH09MLKPQGQxAbQ"
@@ -33,5 +33,4 @@ async def on_message(message):
         # await message.channel.send(get_spotlight_hour(), file=discord.File('351.png'))
 
 
-#client.run(os.getenv('TOKEN'))
-client.run(TOKEN)
+client.run(private.TOKEN)
