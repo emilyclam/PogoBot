@@ -23,3 +23,24 @@ def get_spotlight_hour():
 
     return [date, pokemon, bonus]
 
+
+def get_raid_hour():
+    raid_hour = page.find('div', attrs={'class': 'raid-hour'})
+    pokemon = raid_hour.find('h2').text
+    pokemon = re.search(r'(\D*) Raid Hour', pokemon).group(1)
+
+    # find date
+    raid_link = raid_hour.parent.parent.find('a', attrs={'class', 'event-item-link'})
+    r_page = requests.get("https://leekduck.com" + raid_link['href'])
+    r_page = BeautifulSoup(r_page.text, "html.parser")
+    date = r_page.find('div', attrs={'class', 'event-time-date-wrapper'}).find('span').text
+    date = re.findall(r"\w+", date)
+    date = f"{date[0]}, {date[1]} {date[2]}"
+
+    details = ""
+    # if there are multiple pokemon, find the regions
+    if "," in pokemon:
+        details = "\n"
+        details += r_page.find('div', attrs={'class', 'event-description'}).find('ul').text
+
+    return [date, pokemon, details]
