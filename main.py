@@ -19,6 +19,22 @@ def get_raid_hour():
     return resp
 
 
+def get_comm_day():
+    date, pokemon, attack = GetEvents.get_comm_day()
+    resp = f"The next Community Day will be **{date}** featuring **{pokemon}**.\n\n{attack}"
+    return resp
+
+
+def get_showcase():
+    live_showcase, end_date, pokemon = GetEvents.get_showcase()
+    resp = ""
+    if not live_showcase:
+        resp = f"There aren't any showcases going on at the moment."
+    else:
+        resp = f"The current showcase is for **{pokemon}**. It ends **{end_date}**."
+    return resp
+
+
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
@@ -38,6 +54,12 @@ async def on_message(message):
 
     if message.content == "/raidhour":
         await message.channel.send(get_raid_hour())
+
+    if message.content == "/commday":
+        await message.channel.send(get_comm_day())
+
+    if message.content == "/showcase":
+        await message.channel.send(get_showcase())
 
 
 client.run(private.TOKEN)
