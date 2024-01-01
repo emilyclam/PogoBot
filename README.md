@@ -6,6 +6,8 @@ A discord bot that gives updates about the current and upcoming events in the Po
 - `/fivestar` to get info about the current five-star raid boss
 - `/help` to get a full list of the PogoBot commands!
 
+![Example of the PogoBot at work. /fivestar was called and PogoBot responded.](images/bot-example.png)
+
 ## Backstory
 
 ### Why PogoBot?
