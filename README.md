@@ -20,6 +20,21 @@ to fulfill this purpose.
 - **BeautifulSoup** was used to scrape information off of the **leekduck.com** website.
 - **JSON** was used in tangent with **Pogo API** to get information about raid bosses and type effectiveness.
 
+### Lessons Learned
+I ran into many issues surrounding repeatability and modularization.
+There were many processes that I coded, and then copy and pasted whenever I needed to reuse that code.
+
+This eventually made it really inconveneint whenever I had to make changes, since I had
+to adapt the changes to all the instances of that process. 
+
+Eventually I modularized my code by breaking up small tasks into functions 
+that I could then easily edit and reuse. However, if I had done this from the get-go
+I would've saved a lot of time and headache. In the future I'll be more careful with
+setting up my code to modularize the repeated processes 
+(there's a certain word i'm looking for--) scalable. 
+
+This taught me how to make my code scalable.
+
   what I set out to achieve from the project
   what I learned, where I think I could improve
   why I did not improve it
