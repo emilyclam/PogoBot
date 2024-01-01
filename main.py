@@ -26,12 +26,51 @@ def get_comm_day():
 
 
 def get_showcase():
-    live_showcase, end_date, pokemon = GetEvents.get_showcase()
+    end_date, pokemon = GetEvents.get_showcase()
     resp = ""
-    if not live_showcase:
+    if end_date is None:
         resp = f"There aren't any showcases going on at the moment."
     else:
         resp = f"The current showcase is for **{pokemon}**. It ends **{end_date}**."
+    return resp
+
+
+def get_five_star():
+    try:
+        boss_info = GetEvents.get_five_star()
+        weaknesses = GetEvents.find_weakness(boss_info["type"])
+
+        resp = f"5-star raids currently feature **{boss_info['name']}**.\n\n" + \
+            f"Type: {', '.join(boss_info['type'])}\n" + \
+            f"Boosted Weather: {', '.join(boss_info['boosted_weather'])}\n" + \
+            f"Unboosted Max CP: {boss_info['min_unboosted_cp']} - {boss_info['max_unboosted_cp']}\n" + \
+            f"Boosted Max CP: {boss_info['min_boosted_cp']} - {boss_info['max_boosted_cp']}\n" + \
+            f"{boss_info['name']} is weak against: {', '.join(weaknesses)}"
+
+    except TypeError:
+        boss = GetEvents.get_five_star()
+        resp = f"5-star raids currently feature **{boss}**.\n\n" + \
+               f"Sorry, couldn't find any info about this raid boss."
+
+    return resp
+
+
+def get_mega():
+    try:
+        boss_info = GetEvents.get_mega()
+        weaknesses = GetEvents.find_weakness(boss_info["type"])
+
+        resp = f"Mega raids currently feature **Mega {boss_info['name']}**.\n\n" + \
+            f"Type: {', '.join(boss_info['type'])}\n" + \
+            f"Boosted Weather: {', '.join(boss_info['boosted_weather'])}\n" + \
+            f"Unboosted Max CP: {boss_info['min_unboosted_cp']} - {boss_info['max_unboosted_cp']}\n" + \
+            f"Boosted Max CP: {boss_info['min_boosted_cp']} - {boss_info['max_boosted_cp']}\n" + \
+            f"{boss_info['name']} is weak against: {', '.join(weaknesses)}"
+    except TypeError:
+        boss = GetEvents.get_five_star()
+        resp = f"5-star raids currently feature **{boss}**.\n\n" + \
+               f"Sorry, couldn't find any info about this raid boss."
+
     return resp
 
 
@@ -61,5 +100,10 @@ async def on_message(message):
     if message.content == "/showcase":
         await message.channel.send(get_showcase())
 
+    if message.content == "/fivestar":
+        await message.channel.send(get_five_star())
+
+    if message.content == "/mega" or message.content == "/fourstar":
+        await message.channel.send(get_mega())
 
 client.run(private.TOKEN)
