@@ -4,6 +4,19 @@ import re
 from datetime import datetime
 import json  # used to get info about raid bosses
 
+
+"""
+TODO
+- i'm not sure if the showcase works properly
+    - it seems the event stays on the page even after it's ended (perhaps for time zones ??) so just checking the
+    first occurance of the event is not accurate; instead i have to look at the actual start and end date of the
+    event. 
+    - once the next showcase actually starts, i'm not sure if the old showcase will go away?
+- for the same reasons i'm also not sure if my /mega and /fivestar will work 
+
+"""
+
+
 events_page = requests.get("https://leekduck.com/events/")
 page = BeautifulSoup(events_page.text, "html.parser")
 raids_page = requests.get("https://leekduck.com/boss/")
@@ -16,20 +29,74 @@ def process_date(date):
     return date
 
 
+# input: event div with the identifying class (eg "raid-battles")
+# output: formatted date and time (2024-01-01 -> January 1 | 13:00:00 -> 1 pm)
+# of the end date (time, month, day)
+def process_dt(event):
+    event_info = event.parent.find_previous_sibling()
+    event_end = event_info['data-event-end-date']
+    date, time = event_end.split('T')
+
+    months = ["January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December"]
+
+    year, month, day = date.split("-")
+    hour, min, sec = time.split(":")
+
+    # formatted
+    fdate = months[int(month)-1] + ' ' + str(int(day))
+    ftime = str(int(hour) % 12) + ' AM' if int(hour) // 12 == 0 else ' PM'
+
+    return [ftime, fdate]
+
+
 # returns true if dt is before current date-time
 def after_now(dt):
     date, time = dt.split('T')
     current_date = str(datetime.now().date())
     current_time = str(datetime.now().time())
-
-    print("event date: ", date, time)
-    print("current date: ", current_date, current_time)
-
-    if current_date > date:
-        if current_time > time:
+    if current_date < date:
+        return True
+    if current_date == date:
+        if current_time < time:
             return True
     return False
 
+
+# check if event is going on currently; input: div
+def is_current(event):
+    # check that event is happening right now
+    event_info = event.parent.find_previous_sibling()
+    try:
+        event_start = event_info['data-event-start-date-check']
+        event_end = event_info['data-event-end-date']
+    except KeyError:
+        return False
+
+    if not after_now(event_start) and after_now(event_end):
+        return True
+    return False
+
+
+# input: tier (1/2/3/mega/5)
+# output: dictionary of info or None if no info was found
+def get_boss_info(boss, tier):
+    # load the pogoapi
+    response = requests.get("https://pogoapi.net/api/v1/raid_bosses.json")
+    bosses = json.loads(response.text)
+
+    # check previous
+    for boss_info in bosses["previous"][tier]:
+        if any(word == boss_info["name"] for word in boss.split()):
+            return boss_info
+
+    # check current
+    for boss_info in bosses["current"][tier]:
+        if boss_info["name"] == boss:
+            return boss_info
+
+    # no info was found
+    return None
 
 # finds the types that are strong against the given type (eg ice -> fighting, fire, rock, steel)
 # inputs an array of types
@@ -103,6 +170,7 @@ def get_raid_hour():
 
 def get_comm_day():
     event = page.find('div', attrs={'class': 'community-day'})
+
     event_link = event.parent.parent.find('a', attrs={'class', 'event-item-link'})
     event_page = requests.get("https://leekduck.com" + event_link['href'])
     event_page = BeautifulSoup(event_page.text, "html.parser")
@@ -123,25 +191,19 @@ def get_comm_day():
 
 
 def get_showcase():
-    event = page.find('div', attrs={'class': 'pokéstop-showcase'})
+    events = page.find_all('div', attrs={'class': 'pokéstop-showcase'})
+    event = None
 
     # the case where there aren't any showcases currently or upcoming
+    if events is None:
+        return [None, None]
+
+    for e in events:
+        # check that event is happening right now
+        if is_current(e):
+            event = e
+
     if event is None:
-        return [None, None]
-
-    # check that event is happening right now
-    event_info = event.parent.find_previous_sibling()
-    event_start = event_info['data-event-start-date-check']
-    event_end = event_info['data-event-end-date']
-
-    # if event hasn't started yet
-    if not after_now(event_start):
-        print("not started yet")
-        return [None, None]
-
-    # if event has ended already
-    if not after_now(event_end):
-        print("already ended")
         return [None, None]
 
     event_link = event.parent.parent.find('a', attrs={'class', 'event-item-link'})
@@ -162,61 +224,43 @@ def get_showcase():
 raid_battles = page.find_all('div', attrs={'class', 'raid-battles'})
 
 
+# using the events page instead of the raid page
 def get_five_star():
-    current_boss = r_page.find('h2', attrs={'class', 'boss-tier-header tier-5'}).parent.find_next_sibling()
-    current_boss = current_boss.find('p', attrs={'class', 'boss-name'}).text
+    events = page.find_all('div', attrs={'class': 'raid-battles'})
+    event = None
+    current_boss = None
 
-    """
-    TODO IN THE FUTURE
-    - since i'm using the raids page instead of the event page, i don't know how it'll look like when there are
-    mulitple 5 star raid bosses. my guess is that it'll only find the first one listed in the site, most likely
-    buzzwole. i'll have to check next week to see
-    """
+    # find the first 5star boss that's currently going on
+    for e in events:
+        if is_current(e):
+            if "5-star" in e.find('h2').text:
+                event = e
+                current_boss = re.search(r"(\D*) in 5-star", e.find('h2').text).group(1)
 
-    # load the pogoapi
-    response = requests.get("https://pogoapi.net/api/v1/raid_bosses.json")
-    bosses = json.loads(response.text)
+    time, date = process_dt(event)
 
-    # check previous
-    for boss in bosses["previous"]["5"]:
-        if any(word == boss["name"] for word in current_boss.split()):
-            return boss
-
-    # check current (heatran)
-    for boss in bosses["current"]["5"]:
-        if boss["name"] == current_boss:
-            return boss
-
-    # if it hasn't been found yet, it doesn't exist in the api (just return the name)
-    return current_boss
+    return [date, time, current_boss]
 
 
 def get_mega():
-    current_boss = r_page.find('h2', attrs={'class', 'boss-tier-header tier-Mega'}).parent.find_next_sibling()
-    current_boss = current_boss.find('p', attrs={'class', 'boss-name'}).text
+    events = page.find_all('div', attrs={'class': 'raid-battles'})
+    event = None
+    current_boss = None
 
-    # load the pogoapi
-    response = requests.get("https://pogoapi.net/api/v1/raid_bosses.json")
-    bosses = json.loads(response.text)
+    # find the first 5star boss that's currently going on
+    for e in events:
+        if is_current(e):
+            if "Mega" in e.find('h2').text:
+                event = e
+                current_boss = re.search(r"(\D*) in Mega", e.find('h2').text).group(1)
 
-    # check previous
-    for boss in bosses["previous"]["mega"]:
-        if any(word == boss["name"] for word in current_boss.split()):
-            return boss
+    time, date = process_dt(event)
 
-    # check current (heatran)
-    for boss in bosses["current"]["mega"]:
-        if boss["name"] == current_boss:
-            return boss
-
-    # if it hasn't been found yet, it doesn't exist in the api (just return the name)
-    return current_boss
+    return [date, time, current_boss]
 
 
-s = '2023-12-30'
+s = '2024-01-01'
 print(str(datetime.now()) < s)
-print(datetime.now().time())
-print(datetime.time(datetime.now()))
-
-print(get_showcase())
+#print(datetime.now().time())
+#print(datetime.time(datetime.now()))
 
