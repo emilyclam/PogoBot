@@ -13,10 +13,10 @@ I enjoy playing Pokemon Go in my spare time, and it's especially fun playing wit
 that give Pokemon Go info about updates, I wanted to find a way to streamline and simplify the info-gathering process. This discord bot was made
 to fulfill this purpose. 
 
-## How PogoBot was Made
-The discord.py API was used to create the pogobot.
-BeautifulSoup was used to scrape information off of the leekduck.com website.
-JSON was used in tangent with Pogo API to get information about raid bosses and type effectiveness.
+### How PogoBot was Made
+- The **discord.py API** (python) was used to create the pogobot.
+- **BeautifulSoup** was used to scrape information off of the **leekduck.com** website.
+- **JSON** was used in tangent with **Pogo API** to get information about raid bosses and type effectiveness.
 
   what I set out to achieve from the project
   what I learned, where I think I could improve
