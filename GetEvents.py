@@ -7,12 +7,21 @@ import json  # used to get info about raid bosses
 
 """
 TODO
-- i'm not sure if the showcase works properly
-    - it seems the event stays on the page even after it's ended (perhaps for time zones ??) so just checking the
-    first occurance of the event is not accurate; instead i have to look at the actual start and end date of the
-    event. 
-    - once the next showcase actually starts, i'm not sure if the old showcase will go away?
-- for the same reasons i'm also not sure if my /mega and /fivestar will work 
+- i noticed that if the bot keeps running, the "current date/time" is probably the current 
+date/time that it started running-- meaning that if the bot keeps running continusously,
+it won't be able to accurately determine which events are current
+- this isn't really an issue right now, but later down the road if i have a server running
+this bot, does it keep it running continuously? so would that mean that the current
+events and time would be all messed up?
+- is there a way to ping a bot so that it turns on / becomes active / stats running the
+script?
+- i guess another solution is that if i use uptime robot i can have the ping go off just after
+it falls asleep. so it technically falls asleep, the script ends, and then it wakes up again
+that way the current time of the script is never more than ~30 mins (or however long it stays on)
+old. 
+
+ideally though, i could just make it so the current time reflects the current time, and not the
+time that the script starts running
 
 """
 
@@ -67,13 +76,29 @@ def after_now(dt):
 def is_current(event):
     # check that event is happening right now
     event_info = event.parent.find_previous_sibling()
+
     try:
         event_start = event_info['data-event-start-date-check']
         event_end = event_info['data-event-end-date']
-    except KeyError:
+    except KeyError:  # this should only happen if there aren't any valid events
+        print("not found")
         return False
 
     if not after_now(event_start) and after_now(event_end):
+        return True
+    return False
+
+
+def is_next(event):
+    event_info = event.parent.find_previous_sibling()
+
+    try:
+        event_start = event_info['data-event-start-date-check']
+        event_end = event_info['data-event-end-date']
+    except KeyError:  # this should only happen if there aren't any valid events
+        return False
+
+    if after_now(event_start) and after_now(event_end):
         return True
     return False
 
@@ -97,6 +122,7 @@ def get_boss_info(boss, tier):
 
     # no info was found
     return None
+
 
 # finds the types that are strong against the given type (eg ice -> fighting, fire, rock, steel)
 # inputs an array of types
@@ -169,7 +195,17 @@ def get_raid_hour():
 
 
 def get_comm_day():
-    event = page.find('div', attrs={'class': 'community-day'})
+    events = page.find_all('div', attrs={'class': 'community-day'})
+    event = None
+
+    # check if it's an upcoming event
+    for e in events:
+        if is_next(e):
+            event = e
+            break
+
+    if event is None:
+        return [None, None, None]
 
     event_link = event.parent.parent.find('a', attrs={'class', 'event-item-link'})
     event_page = requests.get("https://leekduck.com" + event_link['href'])
@@ -185,23 +221,23 @@ def get_comm_day():
     date = f"{date[0]}, {date[1]} {date[2]}"
 
     # find featured attack
-    attack = event_page.find('div', attrs={'class', 'features-wrapper'}).find('p').text
+    try:
+        attack = event_page.find(id='featured-attack').find_next_sibling('p').text
+    except AttributeError:
+        attack = None
 
     return [date, pokemon, attack]
 
 
-def get_showcase():
+def get_showcase(get_current):
     events = page.find_all('div', attrs={'class': 'pokéstop-showcase'})
     event = None
 
-    # the case where there aren't any showcases currently or upcoming
-    if events is None:
-        return [None, None]
-
     for e in events:
         # check that event is happening right now
-        if is_current(e):
+        if (get_current and is_current(e)) or (not get_current and is_next(e)):
             event = e
+            break
 
     if event is None:
         return [None, None]
@@ -225,34 +261,36 @@ raid_battles = page.find_all('div', attrs={'class', 'raid-battles'})
 
 
 # using the events page instead of the raid page
-def get_five_star():
+def get_five_star(get_current=True):  # if get_current is true, check is_current; else, get the upcoming (is_next)
     events = page.find_all('div', attrs={'class': 'raid-battles'})
     event = None
     current_boss = None
 
     # find the first 5star boss that's currently going on
     for e in events:
-        if is_current(e):
+        if (get_current and is_current(e)) or (not get_current and is_next(e)):
             if "5-star" in e.find('h2').text:
                 event = e
                 current_boss = re.search(r"(\D*) in 5-star", e.find('h2').text).group(1)
+                break
 
     time, date = process_dt(event)
 
     return [date, time, current_boss]
 
 
-def get_mega():
+def get_mega(get_current):
     events = page.find_all('div', attrs={'class': 'raid-battles'})
     event = None
     current_boss = None
 
     # find the first 5star boss that's currently going on
     for e in events:
-        if is_current(e):
+        if (get_current and is_current(e)) or (not get_current and is_next(e)):
             if "Mega" in e.find('h2').text:
                 event = e
                 current_boss = re.search(r"(\D*) in Mega", e.find('h2').text).group(1)
+                break
 
     time, date = process_dt(event)
 
@@ -260,7 +298,7 @@ def get_mega():
 
 
 s = '2024-01-01'
-print(str(datetime.now()) < s)
+#print(str(datetime.now()) < s)
 #print(datetime.now().time())
 #print(datetime.time(datetime.now()))
 
