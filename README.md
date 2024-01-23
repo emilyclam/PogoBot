@@ -30,12 +30,4 @@ to adapt the changes to all the instances of that process.
 Eventually I modularized my code by breaking up small tasks into functions 
 that I could then easily edit and reuse. However, if I had done this from the get-go
 I would've saved a lot of time and headache. In the future I'll be more careful with
-setting up my code to modularize the repeated processes 
-(there's a certain word i'm looking for--) scalable. 
-
-This taught me how to make my code scalable.
-
-  what I set out to achieve from the project
-  what I learned, where I think I could improve
-  why I did not improve it
-  got some screenshots in there, made it pretty, et
+setting up my code to modularize the repeated processes so my code will be more scalable. 
