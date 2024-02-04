@@ -110,6 +110,10 @@ def get_boss_info(boss, tier):
     response = requests.get("https://pogoapi.net/api/v1/raid_bosses.json")
     bosses = json.loads(response.text)
 
+    # exceptions: kyogre, groudon, latias, and latios are considered "mega_legendary"
+    if boss in ["Kyogre", "Groudon", "Latias", "Latios"] and tier == "mega":
+        tier = "mega_legendary"
+
     # check previous
     for boss_info in bosses["previous"][tier]:
         if any(word == boss_info["name"] for word in boss.split()):
@@ -261,7 +265,7 @@ raid_battles = page.find_all('div', attrs={'class', 'raid-battles'})
 
 
 # using the events page instead of the raid page
-def get_five_star(get_current=True):  # if get_current is true, check is_current; else, get the upcoming (is_next)
+def get_five_star(get_current):  # if get_current is true, check is_current; else, get the upcoming (is_next)
     events = page.find_all('div', attrs={'class': 'raid-battles'})
     event = None
     current_boss = None
@@ -274,6 +278,13 @@ def get_five_star(get_current=True):  # if get_current is true, check is_current
                 current_boss = re.search(r"(\D*) in 5-star", e.find('h2').text).group(1)
                 break
 
+    if current_boss is None:
+        return [None, None, None]
+
+    # case where there's multiple bosses
+    current_boss = re.findall(r"(\w+)", current_boss)
+    current_boss = [boss for boss in current_boss if boss != "and"]
+
     time, date = process_dt(event)
 
     return [date, time, current_boss]
@@ -284,13 +295,19 @@ def get_mega(get_current):
     event = None
     current_boss = None
 
-    # find the first 5star boss that's currently going on
+    # find the first mega boss that's currently going on
     for e in events:
         if (get_current and is_current(e)) or (not get_current and is_next(e)):
             if "Mega" in e.find('h2').text:
                 event = e
                 current_boss = re.search(r"(\D*) in Mega", e.find('h2').text).group(1)
                 break
+
+    if current_boss is None:
+        return [None, None, None]
+
+    # case where there's multiple bosses
+    current_boss = re.findall(r"Mega (\w+)", current_boss)
 
     time, date = process_dt(event)
 

@@ -13,7 +13,8 @@ def get_help():
            f"**/showcase** to get info about the current showcase\n" + \
            f"**/fivestar** to get info about the current five-star raid boss\n" + \
            f"**/mega** or **/fourstar** to get info about the current mega raid boss\n" + \
-           f"**/shadowbird** to get info about the current shadow bird raid boss\n" + \
+           f"(not available yet) **/shadowbird** to get info about the current shadow bird raid boss\n" + \
+           f"add **/next**  to the end of most commands to get the next event (eg /fivestar /next to get the next fivestar raid boss\n" + \
            f"**/help** to get the full list of commands for PogoBot\n"
     return resp
 
@@ -53,50 +54,64 @@ def get_showcase(get_current):
     return resp
 
 
-def get_five_star(get_current=True):
-    date, time, boss = GetEvents.get_five_star(get_current)
-    try:
-        boss_info = GetEvents.get_boss_info(boss, "5")
-        weaknesses = GetEvents.find_weakness(boss_info["type"])
+def get_five_star(get_current):
 
-        if get_current:
-            resp = f"5-star raids currently feature **{boss}**, until {time} {date}.\n\n"
-        else:
-            resp = f"The next 5-star raid will feature **{boss}**, until {time} {date}.\n\n"
-        resp += f"Type: {', '.join(boss_info['type'])}\n" + \
-                f"Boosted Weather: {', '.join(boss_info['boosted_weather'])}\n" + \
-                f"Unboosted Max CP: {boss_info['min_unboosted_cp']} - {boss_info['max_unboosted_cp']}\n" + \
-                f"Boosted Max CP: {boss_info['min_boosted_cp']} - {boss_info['max_boosted_cp']}\n" + \
-                f"{boss_info['name']} is weak against: {', '.join(weaknesses)}"
+    date, time, bosses = GetEvents.get_five_star(get_current)
+    resp = ""
 
-    except TypeError:
-        resp = f"5-star raids currently feature **{boss}**, until {time} {date}.\n\n" + \
-               f"Sorry, couldn't find any info about this raid boss."
+    if date is None:
+        return f"There aren't any 5-star raids going on right now (how rare!)."
 
+    for i, boss in enumerate(bosses):
+        try:
+            boss_info = GetEvents.get_boss_info(boss, "5")
+            weaknesses = GetEvents.find_weakness(boss_info["type"])
+
+            if get_current:
+                resp += f"5-star raids currently feature **{boss}**, until {time} {date}.\n\n"
+            else:
+                resp += f"The next 5-star raids will feature **{boss}**, until {time} {date}.\n\n"
+
+            resp += f"Type: {', '.join(boss_info['type'])}\n" + \
+                    f"Boosted Weather: {', '.join(boss_info['boosted_weather'])}\n" + \
+                    f"Unboosted Max CP: {boss_info['min_unboosted_cp']} - {boss_info['max_unboosted_cp']}\n" + \
+                    f"Boosted Max CP: {boss_info['min_boosted_cp']} - {boss_info['max_boosted_cp']}\n" + \
+                    f"{boss_info['name']} is weak against: {', '.join(weaknesses)}"
+        except TypeError:
+            resp = f"5-star raids currently feature **{boss}**.\n\n" + \
+                   f"Sorry, couldn't find any info about this raid boss."
+        if i + 1 < len(bosses):
+            resp += "\n\n"
     return resp
 
 
 def get_mega(get_current):
-    try:
-        date, time, boss = GetEvents.get_mega(get_current)
-        boss_info = GetEvents.get_boss_info(boss, "mega")
-        weaknesses = GetEvents.find_weakness(boss_info["type"])
+    date, time, bosses = GetEvents.get_mega(get_current)
+    resp = ""
 
-        if get_current:
-            resp = f"Mega raids currently feature **{boss}**, until {time} {date}.\n\n"
-        else:
-            resp = f"The next Mega raids will feature **{boss}**, until {time} {date}.\n\n"
+    if date is None:
+        return f"There aren't any mega raids going on right now (how rare!)."
 
-        resp += f"Type: {', '.join(boss_info['type'])}\n" + \
-            f"Boosted Weather: {', '.join(boss_info['boosted_weather'])}\n" + \
-            f"Unboosted Max CP: {boss_info['min_unboosted_cp']} - {boss_info['max_unboosted_cp']}\n" + \
-            f"Boosted Max CP: {boss_info['min_boosted_cp']} - {boss_info['max_boosted_cp']}\n" + \
-            f"{boss_info['name']} is weak against: {', '.join(weaknesses)}"
-    except TypeError:
-        boss = GetEvents.get_five_star()
-        resp = f"5-star raids currently feature **{boss}**.\n\n" + \
-               f"Sorry, couldn't find any info about this raid boss."
+    for i, boss in enumerate(bosses):
+        try:
+            boss_info = GetEvents.get_boss_info(boss, "mega")
+            weaknesses = GetEvents.find_weakness(boss_info["type"])
 
+            if get_current:
+                resp += f"Mega raids currently feature **{boss}**, until {time} {date}.\n\n"
+            else:
+                resp += f"The next Mega raids will feature **{boss}**, until {time} {date}.\n\n"
+
+            resp += f"Type: {', '.join(boss_info['type'])}\n" + \
+                f"Boosted Weather: {', '.join(boss_info['boosted_weather'])}\n" + \
+                f"Unboosted Max CP: {boss_info['min_unboosted_cp']} - {boss_info['max_unboosted_cp']}\n" + \
+                f"Boosted Max CP: {boss_info['min_boosted_cp']} - {boss_info['max_boosted_cp']}\n" + \
+                f"{boss_info['name']} is weak against: {', '.join(weaknesses)}"
+        except TypeError:
+            resp = f"5-star raids currently feature **{boss}**.\n\n" + \
+                    f"Sorry, couldn't find any info about this raid boss."
+        if i+1 < len(bosses):
+            resp += "\n\n"
     return resp
 
 
@@ -116,7 +131,6 @@ async def on_message(message):
 
     if message.content.endswith('/next'):
         get_current = False
-        print("get next")
 
     if message.content == "/help":
         await message.channel.send(get_help())
