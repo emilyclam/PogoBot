@@ -22,14 +22,14 @@ to fulfill this purpose.
 
 ### How PogoBot was Made
 - The **discord.py API** (python) was used to create the pogobot.
-- **BeautifulSoup** was used to scrape information off of the **leekduck.com** website.
+- **BeautifulSoup** and **RegEx** was used to scrape information off of the **leekduck.com** website.
 - **JSON** was used in tangent with **Pogo API** to get information about raid bosses and type effectiveness.
 
 ### Lessons Learned
 I ran into many issues surrounding repeatability and modularization.
 There were many processes that I coded, and then copy and pasted whenever I needed to reuse that code.
 
-This eventually made it really inconveneint whenever I had to make changes, since I had
+This eventually made it really inconvenient whenever I had to make changes, since I had
 to adapt the changes to all the instances of that process. 
 
 Eventually I modularized my code by breaking up small tasks into functions 
