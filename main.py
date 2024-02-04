@@ -120,14 +120,29 @@ async def on_ready():
     print('We have logged in as {0.user}'.format(client))
 
 
+quizRN = False
+
 @client.event
 async def on_message(message):
     get_current = True
+    global quizRN
+    print("quiz?")
+    print(quizRN)
     if message.author == client.user:
         return
 
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
+
+    if message.content == "/quiz":
+        quizRN = True
+        await message.channel.send('Starting Quiz!')
+
+    if message.content == "/endquiz":
+        if quizRN:
+            await message.channel.send('Quiz Ending')
+            # insert stats
+        quizRN = False
 
     if message.content.endswith('/next'):
         get_current = False
