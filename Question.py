@@ -62,24 +62,38 @@ def get_pokemon_weight(name):
     return weight
 
 
-# given name, guess the type; output = array:type(s)
-def name_guess_type():
-    id_num, pokemon_name = get_random_pokemon()
-    print(id_num, pokemon_name)
-    return f"{pokemon_name} is of what type(s)?"
-    #self.answer = type_data[id_num + 1]["type"]
+# finds the types that are strong against the given type (eg ice -> fighting, fire, rock, steel)
+# inputs an array of types
+def get_pokemon_weakness(types):
+    type_page = requests.get("https://pogoapi.net/api/v1/type_effectiveness.json")
+    type_data = json.loads(type_page.text)
+    weakness = []
+
+    for key in type_data.keys():
+        sum = 0
+        for t in types:
+            sum += type_data[key][t]
+        if sum > len(types) + 0.5:
+            weakness.append(key)
+
+    return weakness
 
 
-"""def picture_guess_name(self):  # input_guess_output
-    id_num, pokemon_name = self.get_random_pokemon()
-    self.question = "What pokemon is this?"
-    self.solution = pokemon_name"""
+# this might not be necessary
+def find_strength(type):
+    type_page = requests.get("https://pogoapi.net/api/v1/type_effectiveness.json")
+    type_data = json.loads(type_page.text)
+    strength = []
+    for key in type_data[type].keys():
+        if type_data[type][key] > 1:  # given type is strong against this type
+            strength.append(key)
+    return strength
 
 
+# i feel like i should put the quiz questions in their own functions..
 def make_question():
-    question_types = ["name_guess_type", "name_guess_heaver"]  # ideally i wouldn't have to manually update this but
+    question_types = ["name_guess_type", "name_guess_heaver", "name_guess_weakness"]  # ideally i wouldn't have to manually update this but
     choice = random.choice(question_types)
-    print(choice)
     q = Question()
 
     if choice == "name_guess_type":
@@ -102,6 +116,11 @@ def make_question():
         q.question = f"Which pokemon is (on average) heavier: {p1} or {p2}?"
         q.answer = p1 if w1 > w2 else p2
 
+    elif choice == "name_guess_weakness":
+        pokemon = get_random_pokemon()[1]  # name
+        q.question = f"What is a weakness of {pokemon}? If there are multiple you only need to input 1."
+        q.answer = get_pokemon_weakness(get_pokemon_type(pokemon))
+
     return q
 
 
@@ -109,16 +128,19 @@ class Question:
     def __init__(self):
         self.question = ""
         self.answer = None  # array of possible correct answers
-        self.user_answer = None  # not sure about yet
         # figure out type of question it is
-
-
-
         # fill in the details of the question (random generators)
         # find the answer
 
     def __str__(self):
         return f"question: {self.question} \nanswer: {self.answer}"
 
+    # capitalization doesn't matter
+    def is_correct(self, user_answer):
+        for a in self.answer:
+            if user_answer.strip().upper() == a.upper():
+                return True
+        return False
 
-print(make_question())
+
+        #print(make_question())

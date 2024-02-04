@@ -1,6 +1,11 @@
 import discord
 import private
-import GetEvents
+import asyncio
+import GetEvents, Question
+
+# RN: quiz feature -> trying to get user response to quiz answer!
+
+# SOURCE 1 = https://github.com/Rapptz/discord.py/blob/v2.3.2/examples/guessing_game.py
 
 intents = discord.Intents(1 << 9 | 1 << 10 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14 | 1 << 15)
 client = discord.Client(intents=intents)
@@ -65,7 +70,7 @@ def get_five_star(get_current):
     for i, boss in enumerate(bosses):
         try:
             boss_info = GetEvents.get_boss_info(boss, "5")
-            weaknesses = GetEvents.find_weakness(boss_info["type"])
+            weaknesses = Question.get_pokemon_weakness(boss_info["type"])
 
             if get_current:
                 resp += f"5-star raids currently feature **{boss}**, until {time} {date}.\n\n"
@@ -95,7 +100,7 @@ def get_mega(get_current):
     for i, boss in enumerate(bosses):
         try:
             boss_info = GetEvents.get_boss_info(boss, "mega")
-            weaknesses = GetEvents.find_weakness(boss_info["type"])
+            weaknesses = Question.get_pokemon_weakness(boss_info["type"])
 
             if get_current:
                 resp += f"Mega raids currently feature **{boss}**, until {time} {date}.\n\n"
@@ -126,8 +131,7 @@ quizRN = False
 async def on_message(message):
     get_current = True
     global quizRN
-    print("quiz?")
-    print(quizRN)
+
     if message.author == client.user:
         return
 
@@ -136,7 +140,27 @@ async def on_message(message):
 
     if message.content == "/quiz":
         quizRN = True
-        await message.channel.send('Starting Quiz!')
+        await message.channel.send("Starting Quiz!\nYou'll have 10 seconds per question.\n \
+                                   Type /ready to get a question.")
+
+    if message.content == "/ready" and quizRN:
+        q = Question.make_question()
+        await message.channel.send(q.question)
+
+        # this code based off of SOURCE 1
+        def is_correct(m):  # check if answer is valid or not
+            return m.author == message.author and isinstance(m.content, str)
+
+        try:
+            guess = await client.wait_for('message'""", check=is_correct""", timeout=15.0)
+            print(guess.content)
+        except asyncio.TimeoutError:
+            return await message.channel.send(f'Sorry, you took too long it was {q.answer}.')
+
+        if is_correct(guess.content):
+            await message.channel.send('You are right!')
+        else:
+            await message.channel.send(f'Oops. It is actually {q.answer}.')
 
     if message.content == "/endquiz":
         if quizRN:
