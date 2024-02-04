@@ -8,9 +8,9 @@ A discord bot that gives updates about the current and upcoming events in the Po
 
 ![Example of the PogoBot at work. /fivestar was called and PogoBot responded.](images/bot-example.png)
 
-## Currently Working On..
-A quiz feature to test your pokemon knowledge! Can be played solo or with friends. In the future will be adjust difficulty
-of quiz questions, and maybe (hopefully) utilize machine learning account for typos and also give similar answer choices for
+## Currently Working On...
+A quiz feature to test your pokemon knowledge! Can be played solo or with friends. In the future will be able to adjust difficulty
+of quiz questions, and maybe (hopefully) utilize machine learning account and nlp to account for typos and give similar answer choices for
 multiple choice questions!
 
 ## Backstory
