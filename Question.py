@@ -114,7 +114,7 @@ def make_question():
                 break  # leave loop once weight difference is large enough
 
         q.question = f"Which pokemon is (on average) heavier: {p1} or {p2}?"
-        q.answer = p1 if w1 > w2 else p2
+        q.answer = [p1] if w1 > w2 else [p2]
 
     elif choice == "name_guess_weakness":
         pokemon = get_random_pokemon()[1]  # name
@@ -128,9 +128,8 @@ class Question:
     def __init__(self):
         self.question = ""
         self.answer = None  # array of possible correct answers
-        # figure out type of question it is
-        # fill in the details of the question (random generators)
-        # find the answer
+        self.answerers = []  # list of players who have already answered
+        self.isOver = False
 
     def __str__(self):
         return f"question: {self.question} \nanswer: {self.answer}"

@@ -56,15 +56,24 @@ class Quiz:
         self.isActive = False
         self.hasStarted = False  # once a quiz has started it's not joinable
         self.players = {}
-        self.currentQuestion = ""
-        self.currentAnswer = ""
+        self.readyPlayers = []
+        self.q = None  # will be Question object
+        self.totalQuestions = 5  # default is 5
+        self.questionCounter = 0
+
+    def players_tostring(self):
+        s = ""
+        for player in self.players.keys():
+            s += str(self.players[player])
+            s += "  "
+        return s
 
     def get_winner(self):
         """Return player with the most points."""
         winner = (0, None)  # (points, name)
         for player in self.players:
-            if winner[0] < player.points:
-                winner = (player.points, player.name)
+            if winner[0] < self.players[player].points:
+                winner = (self.players[player].points, self.players[player].name)
         return winner[1]
 
     def add_player(self, name):
