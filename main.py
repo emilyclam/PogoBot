@@ -127,13 +127,47 @@ async def on_ready():
     print('We have logged in as {0.user}'.format(client))
 
 
-quizRN = False
 quiz = Quiz.Quiz()  # always exists; only active during quiz
+
 
 @client.event
 async def on_message(message):
     get_current = True
     global quiz
+
+    async def ask_question():
+        quiz.q = Question.make_question()
+        await message.channel.send(f"({quiz.questionCounter + 1}) {quiz.q.question}")
+
+        # this code based off of SOURCE 1
+        def is_correct(m):  # check if answer is valid or not
+            return m.author.display_name in quiz.players.keys() and m.channel == message.channel and isinstance(
+                m.content,
+                str)
+
+        while (not quiz.q.isOver) or len(quiz.q.answerers) < len(quiz.players):
+            # try:
+            guess = await client.wait_for('message', check=is_correct)  # timeout=15.0
+            player = guess.author.display_name
+            # except asyncio.TimeoutError:
+            #    return await message.channel.send(f"Time's up! Possible answers were: {q.answer.join(',')}.")
+
+            if player in quiz.q.answerers:
+                await message.channel.send(f"You've already guessed, {player}...")
+                print(f"already guessed {quiz.q.answerers}, {quiz.q.question}")
+            else:
+                quiz.q.answerers.append(player)
+                if quiz.q.is_correct(guess.content):
+                    print("correct")
+                    await message.channel.send(f"**{guess.content}** is right! Nice one, {player}!\n"
+                                               f"Possible answers were {', '.join(quiz.q.answer)}")
+                    quiz.players[player].points += 1
+                    quiz.q.isOver = True
+                else:
+                    await message.channel.send(f"Not quite...\nPossible answers were {', '.join(quiz.q.answer)}")
+
+        print("question has been answered")
+        quiz.questionCounter += 1
 
     if message.author == client.user:
         return
@@ -166,52 +200,69 @@ async def on_message(message):
     if message.content == "/ready" and quiz.isActive and not quiz.hasStarted:
         if message.author.display_name in quiz.players.keys():
             quiz.readyPlayers.append(message.author.display_name)
-            quiz.readyPlayers = set(quiz.readyPlayers)  # delete repeats
-            await message.channel.send(f"{message.author.display_name} is ready.\n"
-                                       f"Ready players: {' '.join(quiz.readyPlayers)}")
+            quiz.readyPlayers = list(set(quiz.readyPlayers))  # delete repeats
+            await message.channel.send(f"Ready players ({len(quiz.readyPlayers)}/{len(quiz.players)}): {' '.join(quiz.readyPlayers)}")
+
+            # start quiz when everyone is ready
             if len(quiz.readyPlayers) == len(quiz.players):
-                await message.channel.send(f"Quiz is Starting!")
+                if quiz.questionCounter == 0:
+                    await message.channel.send(f"\nQuiz is starting!\n")
+                else:
+                    await message.channel.send(f"\nLoading next question...\n")
                 quiz.hasStarted = True
 
-    # start the quiz!
     if quiz.isActive and quiz.hasStarted:
-        while quiz.questionCounter < quiz.totalQuestions:
-            resp = ""
-            quiz.q = Question.make_question()
-            await message.channel.send(quiz.q.question)
+        quiz.q = Question.make_question()
+        resp = ""
+        await message.channel.send(f"({quiz.questionCounter + 1}) {quiz.q.question}")
 
-            # this code based off of SOURCE 1
-            def is_correct(m):  # check if answer is valid or not
-                return m.author.display_name in quiz.players.keys() and m.channel == message.channel and isinstance(m.content, str)
+        # this code based off of SOURCE 1
+        def is_correct(m):  # check if answer is valid or not
+            return m.author.display_name in quiz.players.keys() and m.channel == message.channel and isinstance(
+                m.content, str)
 
-            while (not quiz.q.isOver) or len(quiz.q.answerers) < len(quiz.players):
-                #try:
-                guess = await client.wait_for('message', check=is_correct)  # timeout=15.0
-                player = guess.author.display_name
-                #except asyncio.TimeoutError:
-                #    return await message.channel.send(f"Time's up! Possible answers were: {q.answer.join(',')}.")
+        while (not quiz.q.isOver):
+            # try:
+            guess = await client.wait_for('message', check=is_correct)  # timeout=15.0
+            player = guess.author.display_name
+            # except asyncio.TimeoutError:
+            #    return await message.channel.send(f"Time's up! Possible answers were: {q.answer.join(',')}.")
 
-                if player in quiz.q.answerers:
-                    await message.channel.send(f"You've already guessed, {player}...")
-                    print(f"already guessed {quiz.q.answerers}, {quiz.q.question}")
+            if player in quiz.q.answerers:
+                #await message.channel.send(f"You've already guessed, {player}...")
+                print(f"already guessed {quiz.q.answerers}, {quiz.q.question}")
+            else:
+                quiz.q.answerers.append(player)
+                if quiz.q.is_correct(guess.content):
+                    print("correct")
+                    #await message.channel.send(f"**{guess.content}** is right! Nice one, {player}!\n"
+                    #                           f"Possible answers were {', '.join(quiz.q.answer)}")
+                    resp += f"**{guess.content}** is right! Nice one, {player}!\n"
+                    quiz.players[player].points += 1
+                    quiz.q.isOver = True
                 else:
-                    quiz.q.answerers.append(player)
-                    if quiz.q.is_correct(guess.content):
-                        print("correct")
-                        resp += f"**{guess.content}** is right! Nice one, {player}!\n"
-                        quiz.players[player].points += 1
-                        quiz.q.isOver = True
-                    else:
-                        await message.channel.send(f"Not quite...")
+                    #await message.channel.send(f"Not quite...\nPossible answers were {', '.join(quiz.q.answer)}")
+                    resp += f"Not quite...\n"
 
-            print("question has been answered")
+            print(f"{len(quiz.q.answerers)} >= {len(quiz.players)}")
+            if len(quiz.q.answerers) >= len(quiz.players):
+                break
+
+        if len(quiz.q.answer) > 1:
             resp += f"Possible answers were {', '.join(quiz.q.answer)}"
-            await message.channel.send(resp)
-            quiz.questionCounter += 1
+        resp += "\nLet me know when you're ready for the next one"
+        print("question has been answered")
+        quiz.hasStarted = False  # players need to ready up again
+        quiz.readyPlayers = []
+        quiz.questionCounter += 1
 
-        await message.channel.send(f"Quiz is over! Here are the results:\n"
-                                   f"{quiz.players_tostring()}\n"
-                                   f"It looks like the winner is {quiz.get_winner()}! Congrats!")
+        if quiz.questionCounter >= quiz.totalQuestions:
+            print("all done!")
+            resp += f"\n\nQuiz is over! Here are the results:\n" + \
+                    f"{quiz.players_tostring()}\n" + \
+                    f"It looks like the winner is {quiz.get_winner()}! Congrats!"
+            quiz.end()
+        await message.channel.send(resp)
 
     if message.content == "/endquiz" and quiz.isActive:
         await message.channel.send('Quiz Ending')
