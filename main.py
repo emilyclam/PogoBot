@@ -1,7 +1,9 @@
 import discord
 import private
 import asyncio
-import GetEvents, Question
+import GetEvents
+import Quiz
+import Question
 
 # RN: quiz feature -> trying to get user response to quiz answer!
 
@@ -126,11 +128,13 @@ async def on_ready():
 
 
 quizRN = False
+quiz = Quiz.Quiz()  # always exists; only active during quiz
 
 @client.event
 async def on_message(message):
     get_current = True
     global quizRN
+    global quiz
 
     if message.author == client.user:
         return
@@ -138,29 +142,42 @@ async def on_message(message):
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
 
+    """
+    ------------------------------- QUIZ -----------------------------------
+    """
     if message.content == "/quiz":
-        quizRN = True
-        await message.channel.send("Starting Quiz!\nYou'll have 10 seconds per question.\n \
-                                   Type /ready to get a question.")
+        # quizRN = True
+        quiz.isActive = True
+        quiz.add_player(message.author)
+        print(message.author)
+        await message.channel.send(f"Starting Quiz!\nYou'll have 10 seconds per question.\n" +
+                                   "Type /ready once you're ready for a question.")
 
-    if message.content == "/ready" and quizRN:
+    if message.content == "/join" and quiz.isActive and not quiz.hasStarted:
+        # or should i do the check for duplicates in add_player()?
+        if message.author not in quiz.players.keys():  # what about duplicate usernames?
+            quiz.add_player(message.author)
+
+    if message.content == "/ready" and quiz.isActive:
         q = Question.make_question()
         await message.channel.send(q.question)
 
         # this code based off of SOURCE 1
         def is_correct(m):  # check if answer is valid or not
-            return m.author == message.author and isinstance(m.content, str)
+            #return m.author == message.author and isinstance(m.content, str)
+            return m.channel == message.channel and isinstance(m.content, str)
 
         try:
-            guess = await client.wait_for('message'""", check=is_correct""", timeout=15.0)
-            print(guess.content)
-        except asyncio.TimeoutError:
-            return await message.channel.send(f'Sorry, you took too long it was {q.answer}.')
+            guess = await client.wait_for('message', check=is_correct, timeout=15.0)
 
-        if is_correct(guess.content):
+        except asyncio.TimeoutError:
+            return await message.channel.send(f"Time's up! Possible answers were: {q.answer.join(',')}.")
+
+        if q.is_correct(guess.content):
             await message.channel.send('You are right!')
         else:
-            await message.channel.send(f'Oops. It is actually {q.answer}.')
+            await message.channel.send(f'Oops.')
+        await message.channel.send(f"Possible answers were {q.answer.join(',')}")
 
     if message.content == "/endquiz":
         if quizRN:
@@ -168,6 +185,9 @@ async def on_message(message):
             # insert stats
         quizRN = False
 
+    """
+    ----------------------------- GET GAME INFORMATION -------------------------------------
+    """
     if message.content.endswith('/next'):
         get_current = False
 

@@ -98,7 +98,7 @@ def make_question():
 
     if choice == "name_guess_type":
         pokemon = get_random_pokemon()[1]  # name
-        q.question = f"What type is {pokemon}? If there are multiple you only need to input 1."
+        q.question = f"What type is {pokemon}? If there are multiple you only need to input one."
         q.answer = get_pokemon_type(pokemon)
 
     elif choice == "name_guess_heaver":
@@ -118,7 +118,7 @@ def make_question():
 
     elif choice == "name_guess_weakness":
         pokemon = get_random_pokemon()[1]  # name
-        q.question = f"What is a weakness of {pokemon}? If there are multiple you only need to input 1."
+        q.question = f"What is a weakness of {pokemon}? If there are multiple you only need to input one."
         q.answer = get_pokemon_weakness(get_pokemon_type(pokemon))
 
     return q
@@ -137,10 +137,11 @@ class Question:
 
     # capitalization doesn't matter
     def is_correct(self, user_answer):
+        """Given user's answer, return True if it's correct, False otherwise."""
         for a in self.answer:
             if user_answer.strip().upper() == a.upper():
                 return True
         return False
 
 
-        #print(make_question())
+#print(make_question())
