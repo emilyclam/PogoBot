@@ -69,11 +69,16 @@ class Quiz:
         return s
 
     def get_winner(self):
-        """Return player with the most points."""
+        """Return player with the most points, or None in case of tie."""
         winner = (0, None)  # (points, name)
         for player in self.players:
             if winner[0] < self.players[player].points:
                 winner = (self.players[player].points, self.players[player].name)
+
+        # check if there's a tie (2+ ppl have the winning score
+        for player in self.players:
+            if self.players[player].points == winner[0] and player != winner[1]:  # same num points but diff player
+                return None
         return winner[1]
 
     def add_player(self, name):
@@ -83,4 +88,6 @@ class Quiz:
     def end(self):
         """Clear all the data and set quiz to inactive."""
         self.__init__()
+        print("restart")
+        print(f"questionCounter: {self.questionCounter}")
 
