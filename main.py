@@ -212,6 +212,7 @@ async def on_message(message):
                 quiz.hasStarted = True
 
     if quiz.isActive and quiz.hasStarted:
+        print("make new question")
         quiz.q = Question.make_question()
         resp = ""
         await message.channel.send(f"({quiz.questionCounter + 1}) {quiz.q.question}")
@@ -221,10 +222,12 @@ async def on_message(message):
             return m.author.display_name in quiz.players.keys() and m.channel == message.channel and isinstance(
                 m.content, str)
 
-        while (not quiz.q.isOver):
+        while not quiz.q.isOver:
+            print("q")
             # try:
             guess = await client.wait_for('message', check=is_correct)  # timeout=15.0
             player = guess.author.display_name
+            print(guess.content)
             # except asyncio.TimeoutError:
             #    return await message.channel.send(f"Time's up! Possible answers were: {q.answer.join(',')}.")
 
@@ -242,29 +245,38 @@ async def on_message(message):
                     quiz.q.isOver = True
                 else:
                     #await message.channel.send(f"Not quite...\nPossible answers were {', '.join(quiz.q.answer)}")
+                    print("note quite")
                     resp += f"Not quite...\n"
 
-            print(f"{len(quiz.q.answerers)} >= {len(quiz.players)}")
             if len(quiz.q.answerers) >= len(quiz.players):
-                break
+                print(f"{len(quiz.q.answerers)} >= {len(quiz.players)}, moving on")
+                quiz.q.isOver = True
 
         if len(quiz.q.answer) > 1:
             resp += f"Possible answers were {', '.join(quiz.q.answer)}"
-        resp += "\nLet me know when you're ready for the next one"
-        print("question has been answered")
-        quiz.hasStarted = False  # players need to ready up again
-        quiz.readyPlayers = []
-        quiz.questionCounter += 1
 
-        if quiz.questionCounter >= quiz.totalQuestions:
+        if quiz.questionCounter < quiz.totalQuestions:
+            resp += "\nLet me know when you're ready for the next one"
+            quiz.hasStarted = False  # players need to ready up again
+            quiz.readyPlayers = []
+            quiz.questionCounter += 1
             print("all done!")
+        else:
             resp += f"\n\nQuiz is over! Here are the results:\n" + \
-                    f"{quiz.players_tostring()}\n" + \
-                    f"It looks like the winner is {quiz.get_winner()}! Congrats!"
-            quiz.end()
+                    f"{quiz.players_tostring()}\n"
+            winner = quiz.get_winner()
+            if winner is None:
+                resp += f"It looks like there was a tie! Let's do a tie breaker! Let me know when you're ready."
+                quiz.totalQuestions += 1
+            else:
+                resp += f"It looks like the winner is {quiz.get_winner()}! Congrats!"
+                quiz.end()
+
+        print("reach")
         await message.channel.send(resp)
 
     if message.content == "/endquiz" and quiz.isActive:
+        quiz.end()
         await message.channel.send('Quiz Ending')
         # insert stats
         quiz.isActive = False
